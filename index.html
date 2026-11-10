@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local File Locker - ShuvoAllTool</title>
+    <!-- Tailwind CSS with Dark Mode Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enables dark mode based on class
+        }
+    </script>
+    <!-- CryptoJS for AES Encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .upload-dashed { border: 2px dashed #6366f1; }
+        
+        /* Tab Colors */
+        .active-tab { background-color: #6366f1; color: white; }
+        .inactive-tab { background-color: #e0e7ff; color: #4f46e5; }
+        
+        /* Dark Mode Tab Overrides */
+        .dark .inactive-tab { background-color: #374151; color: #a5b4fc; }
+    </style>
+</head>
+<body class="bg-indigo-50 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
+
+    <div class="bg-white dark:bg-gray-800 max-w-[450px] w-full rounded-[24px] px-6 py-8 shadow-2xl dark:shadow-none relative transition-colors duration-300">
+        
+        <!-- Gear Settings Icon (Top Right) -->
+        <button onclick="toggleSettings()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all duration-300">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+            </svg>
+        </button>
+
+        <!-- Header -->
+        <div class="text-center mb-6 mt-2">
+            <h2 class="text-[24px] font-extrabold text-gray-900 dark:text-white flex items-center justify-center gap-2 transition-colors">
+                🔒 File Locker Pro
+            </h2>
+            <p class="text-[13px] text-gray-500 dark:text-gray-400 mt-1 transition-colors">AES-256 এনক্রিপশন দিয়ে আপনার ফাইল লক করুন</p>
+        </div>
+
+        <!-- Settings Menu (Hidden Initially) -->
+        <div id="settingsMenu" class="hidden mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600 transition-colors duration-300">
+            <div class="flex justify-between items-center">
+                <span class="text-[13px] font-bold text-gray-700 dark:text-gray-200 uppercase flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    Dark Mode
+                </span>
+                <!-- Theme Toggle Switch -->
+                <button onclick="toggleTheme()" class="w-12 h-6 rounded-full bg-gray-300 dark:bg-indigo-500 relative transition-colors duration-300 focus:outline-none shadow-inner">
+                    <div id="themeToggleCircle" class="w-4 h-4 rounded-full bg-white absolute top-1 left-1 dark:translate-x-6 transition-transform duration-300 shadow-sm"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mode Toggle (Encrypt / Decrypt) -->
+        <div class="flex rounded-xl overflow-hidden mb-6 p-1 bg-indigo-100 dark:bg-gray-700 transition-colors">
+            <button id="tabEncrypt" onclick="switchMode('encrypt')" class="flex-1 py-2 text-[14px] font-bold rounded-lg active-tab transition-all">
+                🔐 Lock
+            </button>
+            <button id="tabDecrypt" onclick="switchMode('decrypt')" class="flex-1 py-2 text-[14px] font-bold rounded-lg inactive-tab transition-all">
+                🔓 Unlock
+            </button>
+        </div>
+
+        <!-- Upload Area -->
+        <label id="uploadArea" class="flex flex-col items-center justify-center w-full py-8 px-4 upload-dashed rounded-[16px] cursor-pointer bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all mb-5">
+            <div class="bg-indigo-600 p-3 rounded-full mb-3 shadow-md">
+                <svg id="uploadIcon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <p id="uploadTitle" class="text-[16px] font-bold text-gray-800 dark:text-white mb-1 transition-colors">যেকোনো ফাইল সিলেক্ট করুন</p>
+            <p id="uploadSubtitle" class="text-[12px] text-gray-500 dark:text-gray-400 text-center transition-colors">Max 50MB (Photos, Videos, PDFs)</p>
+            <input id="fileInput" type="file" class="hidden" onchange="handleFile(event)" />
+        </label>
+
+        <!-- Selected File Info -->
+        <div id="fileInfoBox" class="hidden flex items-center justify-between bg-indigo-50 dark:bg-gray-700 p-3 rounded-lg border border-indigo-100 dark:border-gray-600 mb-5 transition-colors">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>
+                <p id="fileName" class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 truncate w-48"></p>
+            </div>
+            <button onclick="resetApp()" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 font-bold text-[20px]">&times;</button>
+        </div>
+
+        <!-- Password Input -->
+        <div class="mb-6 relative">
+            <label class="block text-[13px] font-bold text-gray-700 dark:text-gray-300 mb-2 transition-colors">পাসওয়ার্ড দিন (মনে রাখবেন):</label>
+            <input type="password" id="password" placeholder="Enter secret password" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl p-3 text-[14px] text-gray-800 dark:text-white focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 pr-10 transition-colors">
+            <button onclick="togglePassword()" class="absolute right-3 top-9 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Action Button -->
+        <button id="actionBtn" onclick="processFile()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl text-[15px] transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            🔒 Encrypt & Download
+        </button>
+        
+        <p id="statusMsg" class="text-center text-[13px] font-bold mt-4 hidden"></p>
+
+        <!-- Footer -->
+        <p class="text-center text-[13px] font-bold text-gray-500 dark:text-gray-400 mt-8 transition-colors">
+            Developed by <span class="text-indigo-600 dark:text-indigo-400">Developer Shuvo</span>
+        </p>
+    </div>
+
+    <script>
+        let currentMode = 'encrypt';
+        let selectedFile = null;
+
+        const tabEncrypt = document.getElementById('tabEncrypt');
+        const tabDecrypt = document.getElementById('tabDecrypt');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInfoBox = document.getElementById('fileInfoBox');
+        const fileNameDisplay = document.getElementById('fileName');
+        const passwordInput = document.getElementById('password');
+        const actionBtn = document.getElementById('actionBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const uploadTitle = document.getElementById('uploadTitle');
+        const uploadSubtitle = document.getElementById('uploadSubtitle');
+        const fileInput = document.getElementById('fileInput');
+        const passwordEye = document.getElementById('eyeIcon');
+        const settingsMenu = document.getElementById('settingsMenu');
+
+        // Toggle Settings Menu
+        function toggleSettings() {
+            settingsMenu.classList.toggle('hidden');
+        }
+
+        // Toggle Dark/Light Theme
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            resetApp();
+
+            if (mode === 'encrypt') {
+                tabEncrypt.className = "flex-1 py-2 text-[14px] font-bold rounded-lg active-tab transition-all";
+                tabDecrypt.className = "flex-1 py-2 text-[14px] font-bold rounded-lg inactive-tab transition-all";
+                uploadTitle.innerText = "লক করার জন্য ফাইল সিলেক্ট করুন";
+                uploadSubtitle.innerText = "Max 50MB (Photos, Videos, PDFs)";
+                actionBtn.innerHTML = "🔒 Encrypt & Download";
+                actionBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl text-[15px] transition-all shadow-lg active:scale-95";
+            } else {
+                tabDecrypt.className = "flex-1 py-2 text-[14px] font-bold rounded-lg active-tab transition-all";
+                tabEncrypt.className = "flex-1 py-2 text-[14px] font-bold rounded-lg inactive-tab transition-all";
+                uploadTitle.innerText = "আনলক করতে .pk ফাইল সিলেক্ট করুন";
+                uploadSubtitle.innerText = "শুধুমাত্র .pk এক্সটেনশনের ফাইল সাপোর্ট করে";
+                actionBtn.innerHTML = "🔓 Unlock & Download";
+                actionBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded-xl text-[15px] transition-all shadow-lg active:scale-95";
+            }
+        }
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (currentMode === 'decrypt' && !file.name.endsWith('.pk')) {
+                showStatus("❌ দয়া করে শুধুমাত্র '.pk' লকড ফাইল সিলেক্ট করুন!", "red");
+                return;
+            }
+
+            if (file.size > 50 * 1024 * 1024) { 
+                showStatus("❌ ফাইল সাইজ অনেক বড়! সর্বোচ্চ 50MB সাপোর্ট করে।", "red");
+                return;
+            }
+
+            selectedFile = file;
+            uploadArea.classList.add('hidden');
+            fileInfoBox.classList.remove('hidden');
+            fileInfoBox.classList.add('flex');
+            fileNameDisplay.innerText = file.name;
+            statusMsg.classList.add('hidden');
+        }
+
+        function resetApp() {
+            selectedFile = null;
+            fileInput.value = "";
+            passwordInput.value = "";
+            uploadArea.classList.remove('hidden');
+            fileInfoBox.classList.add('hidden');
+            fileInfoBox.classList.remove('flex');
+            statusMsg.classList.add('hidden');
+            actionBtn.disabled = false;
+        }
+
+        function togglePassword() {
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                passwordEye.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
+            } else {
+                passwordInput.type = "password";
+                passwordEye.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+            }
+        }
+
+        function showStatus(text, color) {
+            statusMsg.innerText = text;
+            statusMsg.className = `text-center text-[13px] font-bold mt-4 text-${color}-600 dark:text-${color}-400`;
+            statusMsg.classList.remove('hidden');
+        }
+
+        async function processFile() {
+            const pwd = passwordInput.value;
+            
+            if (!selectedFile) {
+                showStatus("❌ আগে একটি ফাইল সিলেক্ট করুন!", "red");
+                return;
+            }
+            if (!pwd) {
+                showStatus("❌ পাসওয়ার্ড দেওয়া বাধ্যতামূলক!", "red");
+                return;
+            }
+
+            actionBtn.innerText = "⏳ Processing...";
+            actionBtn.disabled = true;
+
+            setTimeout(() => {
+                const reader = new FileReader();
+
+                if (currentMode === 'encrypt') {
+                    reader.onload = async function(e) {
+                        try {
+                            const dataUrl = e.target.result;
+                            const payload = JSON.stringify({
+                                name: selectedFile.name,
+                                fileData: dataUrl
+                            });
+
+                            const encryptedData = CryptoJS.AES.encrypt(payload, pwd).toString();
+                            const blob = new Blob([encryptedData], { type: 'text/plain' });
+                            
+                            await triggerDownload(blob, selectedFile.name + ".pk");
+                            
+                            showStatus("✅ ফাইল সফলভাবে লক করা হয়েছে!", "green");
+                            actionBtn.innerHTML = "🔒 Encrypt & Download";
+                            actionBtn.disabled = false;
+                        } catch (err) {
+                            showStatus("❌ এনক্রিপ্ট করতে সমস্যা হয়েছে!", "red");
+                            actionBtn.disabled = false;
+                        }
+                    };
+                    reader.readAsDataURL(selectedFile);
+                } 
+                else {
+                    reader.onload = async function(e) {
+                        try {
+                            const encryptedText = e.target.result;
+                            const decryptedBytes = CryptoJS.AES.decrypt(encryptedText, pwd);
+                            const decryptedString = decryptedBytes.toString(CryptoJS.enc.Utf8);
+                            
+                            if (!decryptedString) throw new Error("Wrong Password");
+
+                            const payload = JSON.parse(decryptedString);
+                            
+                            const fetchRes = await fetch(payload.fileData);
+                            const blob = await fetchRes.blob();
+
+                            await triggerDownload(blob, payload.name);
+
+                            showStatus("✅ ফাইল সফলভাবে আনলক হয়েছে!", "green");
+                            actionBtn.innerHTML = "🔓 Unlock & Download";
+                            actionBtn.disabled = false;
+                        } catch (err) {
+                            showStatus("❌ পাসওয়ার্ড ভুল অথবা ফাইলটি নষ্ট!", "red");
+                            actionBtn.innerHTML = "🔓 Unlock & Download";
+                            actionBtn.disabled = false;
+                        }
+                    };
+                    reader.readAsText(selectedFile);
+                }
+            }, 100);
+        }
+
+        async function triggerDownload(blob, filename) {
+            const file = new File([blob], filename, { type: blob.type || "text/plain" });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Secure File'
+                    });
+                    return;
+                } catch (err) {
+                    console.log("Share sheet cancelled.");
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+    </script>
+</body>
+</html>
